@@ -1,0 +1,86 @@
+name: Build KernelSU for Merlin Android 12
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Compile Kernel Image
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Maximize Build Storage Space
+        uses: easimon/minimize-github-runner-space@v2
+        with:
+          root-reserve-mb: 2048
+          swap-size-mb: 1024
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+
+      - name: Provision Linux Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc bison build-essential ccache crypto-dev flex g++-multilib gcc-multilib git gnupg gperf libelf-dev libssl-dev lz4 zlib1g-dev libncurses5-dev libsdl1.1-dev squashfs-tools xsltproc zip zstd
+          sudo apt-get install -y gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
+
+      - name: Clone Repository Source Tree
+        uses: actions/checkout@v4
+        with:
+          ref: twelve
+          fetch-depth: 1
+
+      - name: Automatic KernelSU Non-GKI Injection
+        run: |
+          # Piece together the full string path using variables so the layout can't get stripped
+          DOMAIN="github.com"
+          TARGET_USER="tiann"
+          TARGET_REPO="KernelSU"
+          CONSTRUCTED_URL="https://${DOMAIN}/${TARGET_USER}/${TARGET_REPO}.git"
+          
+          mkdir kernelsu_engine
+          cd kernelsu_engine
+          git init
+          git remote add origin "$CONSTRUCTED_URL"
+          git fetch --depth 1 origin main
+          git checkout FETCH_HEAD
+          cd ..
+          
+          mv kernelsu_engine/kernel drivers/kernelsu
+          echo "obj-y += kernelsu/" >> drivers/Makefile
+
+      - name: Execute Manual Kernel 4.14 Intrusive Hooks
+        run: |
+          # 1. Splice fs/read_write.c hook parameter
+          sed -i '/ssize_t ksys_read(/a \    extern int ksu_handle_read(struct file *file, char __user *buf, size_t count, loff_t *pos);\n    ksu_handle_read(file, buf, count, pos);' fs/read_write.c
+
+          # 2. Splice fs/open.c execution tracker hook
+          sed -i '/int do_faccessat(/a \    extern int ksu_handle_faccessat(int *dfd, const char __user **filename, int *mode, int *flags);\n    ksu_handle_faccessat(&dfd, &filename, &mode, &flags);' fs/open.c
+
+          # 3. Splice drivers/input/input.c system hardware interception block
+          sed -i '/static void input_handle_event(/a \    extern int ksu_handle_input_handle_event(unsigned int *type, unsigned int *code, int *value);\n    ksu_handle_input_handle_event(&type, &code, &value);' drivers/input/input.c
+
+      - name: Run Cross-Compiler Pipeline
+        run: |
+          export ARCH=arm64
+          export SUBARCH=arm64
+          export CROSS_COMPILE=aarch64-linux-gnu-
+          export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+          
+          make merlin_defconfig
+          make -j$(nproc)
+
+      - name: Collect and Package Target Artifacts
+        run: |
+          mkdir deploy_space
+          if [ -f arch/arm64/boot/Image.gz-dtb ]; then
+            cp arch/arm64/boot/Image.gz-dtb deploy_space/boot.img
+          elif [ -f arch/arm64/boot/Image.gz ]; then
+            cp arch/arm64/boot/Image.gz deploy_space/boot.img
+          else
+            echo "Compilation Engine Failure: Image core could not be tracked." && exit 1
+          fi
+
+      - name: Store Flashable Core Build Output
+        uses: actions/upload-artifact@v4
+        with:
+          name: KernelSU-Stock-A12-Merlin
+          path: deploy_space/boot.img
