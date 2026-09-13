@@ -11,7 +11,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y bc bison build-essential ccache flex g++-multilib gcc-multilib git gnupg gperf libelf-dev libssl-dev lz4 zlib1g-dev libncurses5-dev squashfs-tools xsltproc zip zstd cpio
-          # This installs the cross-compiler chain straight from Linux system packages
           sudo apt-get install -y gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
 
       - name: Clone Repository Source Tree
@@ -63,6 +62,11 @@ jobs:
           # FIX THE BLK-CRYPTO ERROR: Strip out the strict "inline" requirement for ksm_flock function mapping
           if [ -f include/linux/keyslot-manager.h ]; then
             sed -i 's/inline void ksm_flock/void ksm_flock/g' include/linux/keyslot-manager.h
+          fi
+          
+          # FIX THE HELIO-DVFSRC-IPI MISSING HEADER BUG: Force local search parameters using quotes instead of angle brackets
+          if [ -f drivers/devfreq/helio-dvfsrc-ipi.c ]; then
+            sed -i 's/<helio-dvfsrc-ipi.h>/"helio-dvfsrc-ipi.h"/g' drivers/devfreq/helio-dvfsrc-ipi.c
           fi
           
           # Initialize the custom MediaTek Merlin target map configuration layer
