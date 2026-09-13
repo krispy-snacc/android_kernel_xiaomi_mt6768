@@ -48,6 +48,15 @@ jobs:
           # 3. Safely append the hardware hook parameter to the end of input.c
           echo -e '\nint ksu_handle_input_handle_event(unsigned int *type, unsigned int *code, int *value) { return 0; }' >> drivers/input/input.c
 
+          # 4. ROBUST INLINE CORRECTION: Cleanly strip the strict inline requirement tags from crypto system layouts
+          # This transforms the broken forced-inline code fragments into valid standard system functions
+          if [ -f include/linux/keyslot-manager.h ]; then
+            sed -i 's/inline void ksm_flock/void ksm_flock/g' include/linux/keyslot-manager.h
+          fi
+          if [ -f include/linux/blk-crypto.h ]; then
+            sed -i 's/inline void blk_crypto_flock/void blk_crypto_flock/g' include/linux/blk-crypto.h
+          fi
+
       - name: Run Cross-Compiler Pipeline
         run: |
           export ARCH=arm64
@@ -67,9 +76,8 @@ jobs:
           ln -sf /usr/bin/cpio tools/build/cpio
           
           # --- THE ROBUST GLOBAL ROUTING MAP ---
-          # Added "-Wno-error=attributes" to globally downgrade inline mismatches from fatal crashes into basic logs.
-          # Added "-fno-pic" to ensure the standard 4.14 cross-compilers map memory perfectly.
-          GLOBAL_FLAGS="-Wno-error -Wno-error=attributes -Wno-inline -fno-pic -I\$(srctree)/drivers/devfreq -I\$(srctree)/drivers/mmc/host/mediatek/ComboA -I\$(srctree)/drivers/mmc/host/mediatek/ComboA/mt6768 -I\$(srctree)/drivers/misc/mediatek/base/power/ppm_v3/inc -I\$(srctree)/drivers/misc/mediatek/base/power/ppm_v3/src/mach/mt6768"
+          # Keeps our global MediaTek folder indexing path maps active to block layout errors automatically
+          GLOBAL_FLAGS="-Wno-error -Wno-inline -fno-pic -I\$(srctree)/drivers/devfreq -I\$(srctree)/drivers/mmc/host/mediatek/ComboA -I\$(srctree)/drivers/mmc/host/mediatek/ComboA/mt6768 -I\$(srctree)/drivers/misc/mediatek/base/power/ppm_v3/inc -I\$(srctree)/drivers/misc/mediatek/base/power/ppm_v3/src/mach/mt6768"
           
           sed -i "s|KBUILD_CFLAGS   :=|KBUILD_CFLAGS   := $GLOBAL_FLAGS |g" Makefile
           
