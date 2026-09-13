@@ -55,11 +55,12 @@ jobs:
           export CROSS_COMPILE=aarch64-linux-gnu-
           export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
           
+          # Force disable the problematic kheaders module directly inside the core target map configuration files before loading it
+          sed -i 's/CONFIG_IKHEADERS=y/CONFIG_IKHEADERS=n/g' arch/arm64/configs/merlin_defconfig
+          echo "CONFIG_IKHEADERS=n" >> arch/arm64/configs/merlin_defconfig
+          
           # Initialize the custom MediaTek Merlin target map configuration layer
           make merlin_defconfig
-          
-          # Force disable the broken kheaders module block right before compiling
-          ./scripts/config --disable CONFIG_IKHEADERS
           
           # Fix the internal kernel tools missing path bug by mapping cpio to standard system links
           mkdir -p tools/build
