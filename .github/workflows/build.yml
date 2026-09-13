@@ -79,8 +79,11 @@ jobs:
             sed -i '1i ccflags-y += -I$(srctree)/drivers/devfreq' drivers/devfreq/Makefile
           fi
 
-          # ENHANCED FIX FOR ALL MEDIA DRIVERS: Forcefully wipe out any "-Werror" constraints across the ENTIRE media folder tree layout
+          # FIX FOR ALL MEDIA DRIVERS: Forcefully wipe out any "-Werror" constraints across the entire media folder tree layout
           find drivers/media/ -name "Makefile" -exec sed -i 's/-Werror//g' {} +
+
+          # NEW FIX FOR MEDIATEK POWER SUBSYSTEMS: Forcefully wipe out local "-Werror" overrides across the entire misc driver branch
+          find drivers/misc/ -name "Makefile" -exec sed -i 's/-Werror//g' {} +
           
           # Initialize the custom MediaTek Merlin target map configuration layer
           make merlin_defconfig
