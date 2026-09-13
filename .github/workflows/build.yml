@@ -48,7 +48,7 @@ jobs:
           # 3. Safely append the hardware hook parameter to the end of input.c
           echo -e '\nint ksu_handle_input_handle_event(unsigned int *type, unsigned int *code, int *value) { return 0; }' >> drivers/input/input.c
 
-          # 4. ROBUST INLINE CORRECTION: Cleanly strip strict inline rules from crypto frameworks
+          # 4. Cleanly strip strict inline rules from crypto frameworks
           if [ -f include/linux/keyslot-manager.h ]; then
             sed -i 's/inline void ksm_flock/void ksm_flock/g' include/linux/keyslot-manager.h
           fi
@@ -77,13 +77,16 @@ jobs:
             sed -i '1i ccflags-y += -I$(srctree)/drivers/devfreq' drivers/devfreq/Makefile
           fi
 
-          # --- ULTRABOOT BULLETPROOF SWEEP ---
-          # Recursively finds every Makefile in the kernel source tree and neutralises all local "-Werror" constraints.
-          # This guarantees that formatting warnings in audio, wifi, or camera drivers can NEVER halt the build again.
+          # Forcefully wipe out any "-Werror" constraints across the entire repository to protect audio, media, and power drivers
           find . -name "Makefile" -exec sed -i 's/-Werror//g' {} +
           
           # Initialize the custom MediaTek Merlin target map configuration layer
           make merlin_defconfig
+          
+          # FIX THE STACK PROTECTOR COMPILER ERROR: Force turn off the strict feature flags inside the generated .config workspace file
+          sed -i 's/CONFIG_CC_STACKPROTECTOR_STRONG=y/CONFIG_CC_STACKPROTECTOR_NONE=y/g' .config
+          sed -i '/CONFIG_CC_STACKPROTECTOR_STRONG/d' .config
+          echo "CONFIG_CC_STACKPROTECTOR_NONE=y" >> .config
           
           # Fix the internal kernel tools missing path bug by forcefully mapping cpio to standard system links
           mkdir -p tools/build
