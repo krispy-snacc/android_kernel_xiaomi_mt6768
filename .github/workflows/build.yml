@@ -63,6 +63,11 @@ jobs:
           if [ -f include/linux/keyslot-manager.h ]; then
             sed -i 's/inline void ksm_flock/void ksm_flock/g' include/linux/keyslot-manager.h
           fi
+
+          # NEW FIX FOR DM.C INLINE CRASH: Strip out strict "inline" keyword from the blk-crypto header file
+          if [ -f include/linux/blk-crypto.h ]; then
+            sed -i 's/inline void blk_crypto_flock/void blk_crypto_flock/g' include/linux/blk-crypto.h
+          fi
           
           # FIX THE HELIO-DVFSRC-IPI MISSING HEADER BUG: Force local search parameters using quotes instead of angle brackets
           if [ -f drivers/devfreq/helio-dvfsrc-ipi.c ]; then
@@ -81,8 +86,7 @@ jobs:
           mkdir -p tools/build
           ln -sf /usr/bin/cpio tools/build/cpio
           
-          # GLOBAL FIX: Tell the build tool pipeline to ignore minor code styling warnings and finish compilation
-          # KCFLAGS passes compiler arguments directly to every single compiled file block
+          # Tell the build tool pipeline to ignore minor code styling warnings
           export KCFLAGS="-Wno-error"
           
           # Run execution compilation sweep matching hardware thread counts
