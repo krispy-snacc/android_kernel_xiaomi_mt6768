@@ -69,6 +69,11 @@ jobs:
             sed -i 's/<helio-dvfsrc-ipi.h>/"helio-dvfsrc-ipi.h"/g' drivers/devfreq/helio-dvfsrc-ipi.c
           fi
           
+          # FIX THE GOVERNOR.H MISSING HEADER BUG: Add the main devfreq folder to the sub-folder Makefile's include paths
+          if [ -f drivers/devfreq/helio-dvfsrc-v2/Makefile ]; then
+            echo 'ccflags-y += -I$(srctree)/drivers/devfreq' >> drivers/devfreq/helio-dvfsrc-v2/Makefile
+          fi
+          
           # Initialize the custom MediaTek Merlin target map configuration layer
           make merlin_defconfig
           
