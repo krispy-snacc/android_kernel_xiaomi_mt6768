@@ -90,11 +90,16 @@ jobs:
           mkdir -p tools/build
           ln -sf /usr/bin/cpio tools/build/cpio
           
-          # --- THE ULTRA ROBUST GLOBAL ROUTING MAP ---
-          # We pack ALL deep-nested MediaTek include search folders directly into the global compiler instruction flags.
-          # This completely ensures that files inside 'ppm_v3' or 'ComboA' can instantly see their sibling header files.
-          GLOBAL_FLAGS="-Wno-error -Wno-inline -fno-pic -I\$(srctree)/drivers/devfreq -I\$(srctree)/drivers/mmc/host/mediatek/ComboA -I\$(srctree)/drivers/mmc/host/mediatek/ComboA/mt6768 -I\$(srctree)/drivers/misc/mediatek/base/power/ppm_v3/inc -I\$(srctree)/drivers/misc/mediatek/base/power/ppm_v3/src/mach/mt6768 -I\$(srctree)/drivers/misc/mediatek/base/power/ppm_v3/src/mach/mt6768/inc"
+          # --- THE ROBUST DYNAMIC PATH AUTO-MAP ---
+          # Instead of playing whack-a-mole, we search for every single subdirectory under devfreq, mmc, and power 
+          # layouts and dynamically link them into a massive header reference map string.
+          MTK_PATHS=""
+          for dir in $(find drivers/devfreq drivers/mmc/host/mediatek drivers/misc/mediatek/base/power -type d); do
+            MTK_PATHS="$MTK_PATHS -I\$(srctree)/$dir"
+          done
           
+          # Inject the dynamic path map strings and global fallback flags straight into the master root Makefile
+          GLOBAL_FLAGS="-Wno-error -Wno-inline -fno-pic $MTK_PATHS"
           sed -i "s|KBUILD_CFLAGS   :=|KBUILD_CFLAGS   := $GLOBAL_FLAGS |g" Makefile
           
           # Tell the build tool pipeline to ignore minor code styling warnings globally
