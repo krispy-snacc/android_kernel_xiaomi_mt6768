@@ -10,9 +10,7 @@ jobs:
       - name: Provision Linux Dependencies
         run: |
           sudo apt-get update
-          # We stripped out the obsolete crypto-dev and libsdl1.1-dev names entirely to stop the package manager from throwing errors
-          sudo apt-get install -y bc bison build-essential ccache flex g++-multilib gcc-multilib git gnupg gperf libelf-dev libssl-dev lz4 zlib1g-dev libncurses5-dev squashfs-tools xsltproc zip zstd
-          # This installs the official cross-compiler chain straight from Linux system packages
+          sudo apt-get install -y bc bison build-essential ccache flex g++-multilib gcc-multilib git gnupg gperf libelf-dev libssl-dev lz4 zlib1g-dev libncurses5-dev squashfs-tools xsltproc zip zstd cpio
           sudo apt-get install -y gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
 
       - name: Clone Repository Source Tree
@@ -23,7 +21,6 @@ jobs:
 
       - name: Automatic KernelSU Non-GKI Injection
         run: |
-          # Piece together the full string path using variables so the layout can't get stripped
           DOMAIN="github.com"
           TARGET_USER="tiann"
           TARGET_REPO="KernelSU"
@@ -60,6 +57,13 @@ jobs:
           
           # Initialize the custom MediaTek Merlin target map configuration layer
           make merlin_defconfig
+          
+          # Force disable the broken kheaders module block right before compiling
+          ./scripts/config --disable CONFIG_IKHEADERS
+          
+          # Fix the internal kernel tools missing path bug by mapping cpio to standard system links
+          mkdir -p tools/build
+          ln -s /usr/bin/cpio tools/build/cpio
           
           # Run execution compilation sweep matching hardware thread counts
           make -j$(nproc)
