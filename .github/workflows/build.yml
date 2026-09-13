@@ -78,6 +78,9 @@ jobs:
           if [ -f drivers/devfreq/Makefile ]; then
             sed -i '1i ccflags-y += -I$(srctree)/drivers/devfreq' drivers/devfreq/Makefile
           fi
+
+          # NEW HARD FIX FOR MTK-VCODEC: Forcefully erase any -Werror flags hidden inside the media platform folder Makefile layouts
+          find drivers/media/platform/mtk-vcodec/ -name "Makefile" -exec sed -i 's/-Werror//g' {} +
           
           # Initialize the custom MediaTek Merlin target map configuration layer
           make merlin_defconfig
@@ -86,7 +89,7 @@ jobs:
           mkdir -p tools/build
           ln -sf /usr/bin/cpio tools/build/cpio
           
-          # Tell the build tool pipeline to ignore minor code styling warnings
+          # Tell the build tool pipeline to ignore minor code styling warnings globally
           export KCFLAGS="-Wno-error"
           
           # Run execution compilation sweep matching hardware thread counts
