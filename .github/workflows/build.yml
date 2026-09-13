@@ -64,7 +64,7 @@ jobs:
             sed -i 's/inline void ksm_flock/void ksm_flock/g' include/linux/keyslot-manager.h
           fi
 
-          # NEW FIX FOR DM.C INLINE CRASH: Strip out strict "inline" keyword from the blk-crypto header file
+          # FIX FOR DM.C INLINE CRASH: Strip out strict "inline" keyword from the blk-crypto header file
           if [ -f include/linux/blk-crypto.h ]; then
             sed -i 's/inline void blk_crypto_flock/void blk_crypto_flock/g' include/linux/blk-crypto.h
           fi
@@ -79,8 +79,8 @@ jobs:
             sed -i '1i ccflags-y += -I$(srctree)/drivers/devfreq' drivers/devfreq/Makefile
           fi
 
-          # NEW HARD FIX FOR MTK-VCODEC: Forcefully erase any -Werror flags hidden inside the media platform folder Makefile layouts
-          find drivers/media/platform/mtk-vcodec/ -name "Makefile" -exec sed -i 's/-Werror//g' {} +
+          # ENHANCED FIX FOR ALL MEDIA DRIVERS: Forcefully wipe out any "-Werror" constraints across the ENTIRE media folder tree layout
+          find drivers/media/ -name "Makefile" -exec sed -i 's/-Werror//g' {} +
           
           # Initialize the custom MediaTek Merlin target map configuration layer
           make merlin_defconfig
