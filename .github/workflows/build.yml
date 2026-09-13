@@ -10,8 +10,9 @@ jobs:
       - name: Provision Linux Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y bc bison build-essential ccache crypto-dev flex g++-multilib gcc-multilib git gnupg gperf libelf-dev libssl-dev lz4 zlib1g-dev libncurses5-dev libsdl1.1-dev squashfs-tools xsltproc zip zstd
-          # This installs the cross-compiler chain straight from Linux system packages instead of downloading from a link
+          # We stripped out the obsolete crypto-dev and libsdl1.1-dev names entirely to stop the package manager from throwing errors
+          sudo apt-get install -y bc bison build-essential ccache flex g++-multilib gcc-multilib git gnupg gperf libelf-dev libssl-dev lz4 zlib1g-dev libncurses5-dev squashfs-tools xsltproc zip zstd
+          # This installs the official cross-compiler chain straight from Linux system packages
           sudo apt-get install -y gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
 
       - name: Clone Repository Source Tree
