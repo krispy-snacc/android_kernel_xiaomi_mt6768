@@ -63,9 +63,16 @@ jobs:
           export CROSS_COMPILE=aarch64-linux-gnu-
           export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
           
-          # Force disable the problematic kheaders module directly inside the core configuration
+          # --- SOURCE CONFIGURATION PATCHES ---
+          # 1. Force disable the problematic kheaders module inside the defconfig target map file
           sed -i 's/CONFIG_IKHEADERS=y/CONFIG_IKHEADERS=n/g' arch/arm64/configs/merlin_defconfig
           echo "CONFIG_IKHEADERS=n" >> arch/arm64/configs/merlin_defconfig
+          
+          # 2. FIX THE STACK PROTECTOR RESTART LOOP: Force disable it inside the factory defconfig source file BEFORE loading it
+          # This forces a clean configuration path without popping up interactive terminal questions
+          sed -i 's/CONFIG_CC_STACKPROTECTOR_STRONG=y/CONFIG_CC_STACKPROTECTOR_NONE=y/g' arch/arm64/configs/merlin_defconfig
+          sed -i '/CONFIG_CC_STACKPROTECTOR_STRONG/d' arch/arm64/configs/merlin_defconfig
+          echo "CONFIG_CC_STACKPROTECTOR_NONE=y" >> arch/arm64/configs/merlin_defconfig
           
           # FIX THE HELIO-DVFSRC-IPI MISSING HEADER BUG: Force local search parameters using quotes instead of angle brackets
           if [ -f drivers/devfreq/helio-dvfsrc-ipi.c ]; then
@@ -80,13 +87,8 @@ jobs:
           # Forcefully wipe out any "-Werror" constraints across the entire repository to protect audio, media, and power drivers
           find . -name "Makefile" -exec sed -i 's/-Werror//g' {} +
           
-          # Initialize the custom MediaTek Merlin target map configuration layer
+          # Initialize the patched target configuration block into a valid .config engine file layout
           make merlin_defconfig
-          
-          # FIX THE STACK PROTECTOR COMPILER ERROR: Force turn off the strict feature flags inside the generated .config workspace file
-          sed -i 's/CONFIG_CC_STACKPROTECTOR_STRONG=y/CONFIG_CC_STACKPROTECTOR_NONE=y/g' .config
-          sed -i '/CONFIG_CC_STACKPROTECTOR_STRONG/d' .config
-          echo "CONFIG_CC_STACKPROTECTOR_NONE=y" >> .config
           
           # Fix the internal kernel tools missing path bug by forcefully mapping cpio to standard system links
           mkdir -p tools/build
