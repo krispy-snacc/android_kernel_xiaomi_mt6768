@@ -90,15 +90,15 @@ jobs:
           mkdir -p tools/build
           ln -sf /usr/bin/cpio tools/build/cpio
           
-          # --- THE ROBUST DYNAMIC PATH AUTO-MAP ---
-          # Instead of playing whack-a-mole, we search for every single subdirectory under devfreq, mmc, and power 
-          # layouts and dynamically link them into a massive header reference map string.
+          # --- EXPANDED DYNAMIC PATH AUTO-MAP ---
+          # We expand the directory loop map scanner to include 'drivers/misc/mediatek' entirely.
+          # This maps the root headers folder block, allowing devfreq to find core items like 'mtk_lpae.h'.
           MTK_PATHS=""
-          for dir in $(find drivers/devfreq drivers/mmc/host/mediatek drivers/misc/mediatek/base/power -type d); do
+          for dir in $(find drivers/devfreq drivers/mmc/host/mediatek drivers/misc/mediatek -type d); do
             MTK_PATHS="$MTK_PATHS -I\$(srctree)/$dir"
           done
           
-          # Inject the dynamic path map strings and global fallback flags straight into the master root Makefile
+          # Inject the expanded path map strings and global fallback flags straight into the master root Makefile
           GLOBAL_FLAGS="-Wno-error -Wno-inline -fno-pic $MTK_PATHS"
           sed -i "s|KBUILD_CFLAGS   :=|KBUILD_CFLAGS   := $GLOBAL_FLAGS |g" Makefile
           
