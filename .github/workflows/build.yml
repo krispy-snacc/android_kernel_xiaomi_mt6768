@@ -62,9 +62,9 @@ jobs:
           # Initialize the custom MediaTek Merlin target map configuration layer
           make merlin_defconfig
           
-          # Fix the internal kernel tools missing path bug by mapping cpio to standard system links
+          # Fix the internal kernel tools missing path bug by forcefully mapping cpio to standard system links
           mkdir -p tools/build
-          ln -s /usr/bin/cpio tools/build/cpio
+          ln -sf /usr/bin/cpio tools/build/cpio
           
           # Run execution compilation sweep matching hardware thread counts
           make -j$(nproc)
