@@ -63,7 +63,7 @@ jobs:
           export CROSS_COMPILE=aarch64-linux-gnu-
           export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
           
-          # FIX THE COMPILER TYPO ERROR: Recursively find and fix the missing '-W' prefix flag typo in all config/build files
+          # FIX THE COMPILER TYPO ERROR: Fix the missing '-W' prefix flag typo in all config/build files
           find . -type f -exec sed -i 's/-implicit-function-declaration/-Wimplicit-function-declaration/g' {} +
           
           # Force disable the problematic kheaders module directly inside the core configuration
@@ -79,11 +79,6 @@ jobs:
           if [ -f drivers/devfreq/helio-dvfsrc-ipi.c ]; then
             sed -i 's/<helio-dvfsrc-ipi.h>/"helio-dvfsrc-ipi.h"/g' drivers/devfreq/helio-dvfsrc-ipi.c
           fi
-          
-          # FIX THE GOVERNOR.H INTER-DIRECTORY BUG: Force include the parent devfreq path globally across all sub-compilations
-          if [ -f drivers/devfreq/Makefile ]; then
-            sed -i '1i ccflags-y += -I$(srctree)/drivers/devfreq' drivers/devfreq/Makefile
-          fi
 
           # Forcefully wipe out any "-Werror" constraints across the entire repository to protect audio, media, and power drivers
           find . -name "Makefile" -exec sed -i 's/-Werror//g' {} +
@@ -94,6 +89,13 @@ jobs:
           # Fix the internal kernel tools missing path bug by forcefully mapping cpio to standard system links
           mkdir -p tools/build
           ln -sf /usr/bin/cpio tools/build/cpio
+          
+          # --- THE ULTRA ROBUST GLOBAL ROUTING MAP ---
+          # We pack ALL deep-nested MediaTek include search folders directly into the global compiler instruction flags.
+          # This completely ensures that files inside 'ppm_v3' or 'ComboA' can instantly see their sibling header files.
+          GLOBAL_FLAGS="-Wno-error -Wno-inline -fno-pic -I\$(srctree)/drivers/devfreq -I\$(srctree)/drivers/mmc/host/mediatek/ComboA -I\$(srctree)/drivers/mmc/host/mediatek/ComboA/mt6768 -I\$(srctree)/drivers/misc/mediatek/base/power/ppm_v3/inc -I\$(srctree)/drivers/misc/mediatek/base/power/ppm_v3/src/mach/mt6768 -I\$(srctree)/drivers/misc/mediatek/base/power/ppm_v3/src/mach/mt6768/inc"
+          
+          sed -i "s|KBUILD_CFLAGS   :=|KBUILD_CFLAGS   := $GLOBAL_FLAGS |g" Makefile
           
           # Tell the build tool pipeline to ignore minor code styling warnings globally
           export KCFLAGS="-Wno-error"
