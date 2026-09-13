@@ -90,17 +90,17 @@ jobs:
           mkdir -p tools/build
           ln -sf /usr/bin/cpio tools/build/cpio
           
-          # --- EXPANDED DYNAMIC PATH AUTO-MAP ---
-          # We expand the directory loop map scanner to include 'drivers/misc/mediatek' entirely.
-          # This maps the root headers folder block, allowing devfreq to find core items like 'mtk_lpae.h'.
-          MTK_PATHS=""
+          # --- THE BULLETPROOF FILE MAP METHOD ---
+          # Instead of running a huge sed command line, we write the global flags and all the folder 
+          # paths directly into an external helper file named 'mtk_paths.mk' using safe loop echoes.
+          echo "GLOBAL_FLAGS := -Wno-error -Wno-inline -fno-pic" > mtk_paths.mk
           for dir in $(find drivers/devfreq drivers/mmc/host/mediatek drivers/misc/mediatek -type d); do
-            MTK_PATHS="$MTK_PATHS -I\$(srctree)/$dir"
+            echo "GLOBAL_FLAGS += -I\$(srctree)/$dir" >> mtk_paths.mk
           done
+          echo "KBUILD_CFLAGS += \$(GLOBAL_FLAGS)" >> mtk_paths.mk
           
-          # Inject the expanded path map strings and global fallback flags straight into the master root Makefile
-          GLOBAL_FLAGS="-Wno-error -Wno-inline -fno-pic $MTK_PATHS"
-          sed -i "s|KBUILD_CFLAGS   :=|KBUILD_CFLAGS   := $GLOBAL_FLAGS |g" Makefile
+          # We tell the main root Makefile to include our path map file smoothly right at the very top
+          sed -i '1i include $(srctree)/mtk_paths.mk' Makefile
           
           # Tell the build tool pipeline to ignore minor code styling warnings globally
           export KCFLAGS="-Wno-error"
